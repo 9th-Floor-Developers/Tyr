@@ -1,71 +1,69 @@
-import numpy as np
+import cv2
 import mediapipe as mp
+import pyautogui
+from cv2 import VideoCapture
+from mediapipe import Image
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
-import cv2
-import os
-os.environ["QT_QPA_PLATFORM"] = "xcb"
+from mediapipe.tasks.python.components.containers.landmark import \
+	NormalizedLandmark
+from mediapipe.tasks.python.vision.hand_landmarker import HandLandmarkerResult
 
-mp_hands = mp.tasks.vision.HandLandmarksConnections
-mp_drawing = mp.tasks.vision.drawing_utils
-mp_drawing_styles = mp.tasks.vision.drawing_styles
+base_options = python.BaseOptions(model_asset_path='hand_landmarker.task')
+options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=1)
+detector = vision.HandLandmarker.create_from_options(options)
+BUFFER_DISTANCE: float = .15
+SCREEN_SIZE = pyautogui.size()
 
-MARGIN = 10  # pixels
-FONT_SIZE = 1
-FONT_THICKNESS = 1
-HANDEDNESS_TEXT_COLOR = (88, 205, 54) # vibrant green
 
-def draw_landmarks_on_image(rgb_image, detection_result):
-	hand_landmarks_list = detection_result.hand_landmarks
-	handedness_list = detection_result.handedness
-	annotated_image = np.copy(rgb_image)
+def handle_mouse(hand: list[NormalizedLandmark]):
+	thumb = hand[4]
+	index = hand[8]
+	middle = hand[12]
+	ring = hand[16]
 	
-	# Loop through the detected hands to visualize.
-	for idx in range(len(hand_landmarks_list)):
-		hand_landmarks = hand_landmarks_list[idx]
-		handedness = handedness_list[idx]
+	print(f"{index.y} {thumb.y}")
+	
+	# if distance(middle, thumb) < BUFFER_DISTANCE:
+	# 	print("left click")
+	# elif distance(ring, thumb) < BUFFER_DISTANCE:
+	# 	print("right click")
+	if (index.y < thumb.y):
+		pyautogui.moveTo(index.x * SCREEN_SIZE[0], index.y * SCREEN_SIZE[1])
+
+
+def distance(
+	landmark1: NormalizedLandmark,
+	landmark2: NormalizedLandmark
+) -> float:
+	return abs(landmark2.y - landmark1.y) + abs(landmark2.x - landmark1.x)
+
+
+def main():
+	cap: VideoCapture = cv2.VideoCapture(0)
+	
+	while True:
+		ret, frame = cap.read()
 		
-		# Draw the hand landmarks.
-		mp_drawing.draw_landmarks(
-			annotated_image,
-			hand_landmarks,
-			mp_hands.HAND_CONNECTIONS,
-			mp_drawing_styles.get_default_hand_landmarks_style(),
-			mp_drawing_styles.get_default_hand_connections_style())
+		frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+		mp_image: Image = mp.Image(
+			image_format=mp.ImageFormat.SRGB, data=frame_rgb
+		)
 		
-		# Get the top left corner of the detected hand's bounding box.
-		height, width, _ = annotated_image.shape
-		x_coordinates = [landmark.x for landmark in hand_landmarks]
-		y_coordinates = [landmark.y for landmark in hand_landmarks]
-		text_x = int(min(x_coordinates) * width)
-		text_y = int(min(y_coordinates) * height) - MARGIN
+		detection_result: HandLandmarkerResult = detector.detect(mp_image)
 		
-		# Draw handedness (left or right hand) on the image.
-		cv2.putText(annotated_image, f"{handedness[0].category_name}",
-			(text_x, text_y), cv2.FONT_ITALIC,
-			FONT_SIZE, HANDEDNESS_TEXT_COLOR, FONT_THICKNESS, cv2.LINE_AA)
+		if len(detection_result.hand_landmarks) != 0:
+			hand: list[NormalizedLandmark] = detection_result.hand_landmarks[0]
+			handle_mouse(hand)
+		
+		cv2.imshow("Camera Feed", frame)
+		
+		if cv2.waitKey(1) & 0xFF == ord('q'):
+			break
 	
-	return annotated_image
+	cap.release()
+	cv2.destroyAllWindows()
 
-#base_options = python.BaseOptions(model_asset_path='hand_landmarker.task')
-#options = vision.HandLandmarkerOptions(base_options=base_options,
-#	num_hands=1)
-#detector = vision.HandLandmarker.create_from_options(options)
 
-cap = cv2.VideoCapture(0)
-while True:
-	ret, frame = cap.read()
-	#frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-	#mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
-	
-	#detection_result = detector.detect(mp_image)
-	
-	cv2.imshow("Window", frame)
-
-	
-	# STEP 4: Detect hand landmarks from the input image.
-	# detection_result = detector.detect(mp_image)
-	#
-	# # STEP 5: Process the classification result. In this case, visualize it.
-	# annotated_image = draw_landmarks_on_image(mp_image.numpy_view(), detection_result)
-	# cv2.imshow("Window", cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR))
+if __name__ == '__main__':
+	main()
