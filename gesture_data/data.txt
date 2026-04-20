@@ -1,0 +1,1 @@
+{"is_moving": true, "is_left_click": false, "is_right_click": false}
