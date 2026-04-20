@@ -1,6 +1,5 @@
 import cv2
 import mediapipe as mp
-import pyautogui
 from cv2 import VideoCapture
 from mediapipe import Image
 from mediapipe.tasks import python
@@ -13,7 +12,7 @@ base_options = python.BaseOptions(model_asset_path='hand_landmarker.task')
 options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=1)
 detector = vision.HandLandmarker.create_from_options(options)
 BUFFER_DISTANCE: float = .15
-SCREEN_SIZE = pyautogui.size()
+SCREEN_SIZE = (1920, 960)
 
 
 def handle_mouse(hand: list[NormalizedLandmark]):
@@ -29,7 +28,8 @@ def handle_mouse(hand: list[NormalizedLandmark]):
 	# elif distance(ring, thumb) < BUFFER_DISTANCE:
 	# 	print("right click")
 	if (index.y < thumb.y):
-		pyautogui.moveTo(index.x * SCREEN_SIZE[0], index.y * SCREEN_SIZE[1])
+		print("HI")
+		#pyautogui.moveTo(index.x * SCREEN_SIZE[0], index.y * SCREEN_SIZE[1])
 
 
 def distance(
