@@ -11,7 +11,7 @@ from mediapipe.tasks.python.vision.hand_landmarker import HandLandmarkerResult
 base_options = python.BaseOptions(model_asset_path='hand_landmarker.task')
 options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=1)
 detector = vision.HandLandmarker.create_from_options(options)
-BUFFER_DISTANCE: float = .15
+BUFFER_DISTANCE: float = .05
 SCREEN_SIZE = (1920, 960)
 
 
@@ -20,15 +20,21 @@ def handle_mouse(hand: list[NormalizedLandmark]):
 	index = hand[8]
 	middle = hand[12]
 	ring = hand[16]
-	
+
+	if (thumb.x is None) or (index.x is None) or (middle.x is None) or (ring.x is None):
+		return
+
+	if (thumb.y is None) or (index.y is None) or (middle.y is None) or (ring.y is None):
+		return
+
 	print(f"{index.y} {thumb.y}")
 	
-	# if distance(middle, thumb) < BUFFER_DISTANCE:
-	# 	print("left click")
-	# elif distance(ring, thumb) < BUFFER_DISTANCE:
-	# 	print("right click")
-	if (index.y < thumb.y):
-		print("HI")
+	if distance(middle, thumb) < BUFFER_DISTANCE:
+		print("left click")
+	elif distance(ring, thumb) < BUFFER_DISTANCE:
+		print("right click")
+	if index.y < thumb.y:
+		print("hold")
 		#pyautogui.moveTo(index.x * SCREEN_SIZE[0], index.y * SCREEN_SIZE[1])
 
 
@@ -36,6 +42,12 @@ def distance(
 	landmark1: NormalizedLandmark,
 	landmark2: NormalizedLandmark
 ) -> float:
+	if (landmark1.x is None) or (landmark2.x is None):
+		return 10000 #If 1 of the 2 numbers are null
+
+	if (landmark1.y is None) or (landmark2.y is None):
+		return 10000
+
 	return abs(landmark2.y - landmark1.y) + abs(landmark2.x - landmark1.x)
 
 
