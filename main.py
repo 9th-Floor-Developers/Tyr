@@ -1,8 +1,10 @@
+import math
 import threading
-import time
+from threading import Thread
 
 import cv2
 import mediapipe as mp
+import pyautogui
 from cv2 import VideoCapture
 from mediapipe import Image
 from mediapipe.tasks import python
@@ -10,9 +12,6 @@ from mediapipe.tasks.python import vision
 from mediapipe.tasks.python.components.containers.landmark import \
 	NormalizedLandmark
 from mediapipe.tasks.python.vision.hand_landmarker import HandLandmarkerResult
-
-import pyautogui
-import math
 
 base_options = python.BaseOptions(model_asset_path='hand_landmarker.task')
 options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=1)
