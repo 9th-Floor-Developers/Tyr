@@ -83,6 +83,8 @@ def detect_hand(mp_image: Image) -> None:
 def main() -> None:
 	cap: VideoCapture = cv2.VideoCapture(0)
 	
+	threads: list[Thread] = []
+	
 	while True:
 		_, frame = cap.read()
 		
@@ -92,13 +94,11 @@ def main() -> None:
 		)
 		
 		thread = threading.Thread(target=detect_hand, args=(mp_image,))
-		# start_time = time.perf_counter()
+		threads.append(thread)
 		thread.start()
-		# thread.join()
-		# end_time = time.perf_counter()
 		
-		# print(end_time - start_time)
-		# time.sleep(.15)
+		while len(threads) > 20:
+			threads.remove(threads[0])
 		
 		cv2.imshow("Camera Feed", frame)
 		
